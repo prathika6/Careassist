@@ -110,48 +110,23 @@ export default function AICompanion() {
     }
   };
 
-  const getAIResponse = (userMessage) => {
-    const msg = userMessage.toLowerCase();
-    const responses = AI_RESPONSES[mode];
-
-    // Keyword-based responses
-    if (msg.includes('sad') || msg.includes('cry') || msg.includes('lonely')) {
-      if (mode === 'child') return "Oh no! It's okay to feel sad sometimes. Want me to tell you something happy? Your family loves you so much! 💖";
-      if (mode === 'elder') return "It is natural to feel lonely sometimes, dear. But please remember, you are never truly alone. Your family holds you in their hearts every day. 🌸";
-      return "I hear you. It's okay to have hard days. Your feelings are valid. Is there something specific on your mind you'd like to talk about?";
-    }
-
-    if (msg.includes('medicine') || msg.includes('pill') || msg.includes('medication')) {
-      if (mode === 'child') return "Your medicines are like tiny helpers fighting for you! 💊 Remember to take them — they make you stronger! ⭐";
-      if (mode === 'elder') return "Your medicines are important, dear. If you ever have trouble remembering, your caregiver can help you. 🌸";
-      return "Medication adherence is such an important part of recovery. Each dose brings you closer to wellness. Have you set up reminders?";
-    }
-
-    if (msg.includes('family') || msg.includes('mom') || msg.includes('dad') || msg.includes('daughter') || msg.includes('son')) {
-      if (mode === 'elder') return "How wonderful to talk about your family! They love you deeply. Have you checked the family messages section? They might have sent you something. 💛";
-      return "Your family connection is so important to your healing. Have you visited the Family Chat section today?";
-    }
-
-    if (msg.includes('pain') || msg.includes('hurt') || msg.includes('sick')) {
-      return mode === 'child'
-        ? "I'm sorry you're not feeling well. 😢 Your care friends are working hard to help you feel better! Should I let your caregiver know? 💙"
-        : "I'm sorry to hear you're not feeling well. Please make sure your caregiver knows about this. Your health comes first. 💙";
-    }
-
-    if (msg.includes('memory') || msg.includes('remember') || msg.includes('past')) {
-      return mode === 'elder'
-        ? "Memories are such precious treasures! 🌟 Have you visited the Memory Vault? You and your family can add your most cherished memories there. 📸"
-        : "Memories are beautiful. Would you like to add something to your Memory Vault? It's a wonderful place to keep your precious moments. 📸";
-    }
-
-    if (msg.includes('good') || msg.includes('great') || msg.includes('happy') || msg.includes('better')) {
-      if (mode === 'child') return "YAY! 🎉 That makes me so happy to hear! You are doing AMAZING! Keep it up, superstar! 🌟⭐";
-      if (mode === 'elder') return "That warms my heart to hear, dear. Every good moment is a blessing. 🌸 Keep nurturing those happy feelings!";
-      return "That's wonderful to hear! Positive days like this are so important. What's been helping you feel this way? 🌿";
-    }
-
-    // Default random response
-    return responses[Math.floor(Math.random() * responses.length)];
+  const getAIResponse = async (userMessage) => {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': process.env.REACT_APP_ANTHROPIC_KEY,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 200,
+      system: `You are ${persona.name}, a compassionate health companion for a ${mode} mode patient. Be warm, encouraging, and avoid medical jargon.`,
+      messages: [{ role: 'user', content: userMessage }],
+    }),
+  });
+  const data = await response.json();
+  return data.content?.[0]?.text || 'I am here for you. 💙';
   };
 
   const sendMessage = async () => {
@@ -180,7 +155,7 @@ export default function AICompanion() {
       await new Promise(resolve => setTimeout(resolve, 1200 + Math.random() * 800));
 
       // Generate and save AI response
-      const aiText = getAIResponse(input.trim());
+      const aiText = await getAIResponse(input.trim());
       const aiMsg = {
         patient_id: patientRecord.id,
         role: 'assistant',
