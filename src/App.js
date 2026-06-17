@@ -3,26 +3,19 @@ import { useAuth } from './context/AuthContext';
 import { supabase } from './lib/supabase';
 import Sidebar from './components/shared/Sidebar';
 import AuthPage from './components/auth/AuthPage';
-
-// Patient
 import PatientHome from './components/patient/PatientHome';
 import AICompanion from './components/patient/AICompanion';
 import MedicineReminders from './components/patient/MedicineReminders';
 import MemoryVault from './components/patient/MemoryVault';
 import HopeWellness from './components/patient/HopeWellness';
-
-// Shared
-import FamilyChat from './components/shared/FamilyChat';
 import Appointments from './components/shared/Appointments';
-import VoiceNotes from './components/shared/VoiceNotes';
-
-// Family & Caregiver & Doctor & Admin
+import FamilyHub from './components/shared/FamilyHub';
+import ConnectionHub from './components/shared/ConnectionHub';
+import ProfileSettings from './components/shared/ProfileSettings';
 import { FamilyDashboard } from './components/family/FamilyDashboard';
 import CaregiverDashboard from './components/caregiver/CaregiverDashboard';
 import DoctorDashboard from './components/doctor/DoctorDashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
-
-/* ────── Lightweight inline pages ────── */
 
 function MoodJournal() {
   const { patientRecord } = useAuth();
@@ -40,12 +33,9 @@ function MoodJournal() {
   if (loading) return <div className="loading-spinner"/>;
   return (
     <div>
-      <div className="page-header">
-        <h2 className="page-title">{mode==='child'?'🌈 My Feelings':'😊 Mood Journal'}</h2>
-        <p className="page-subtitle">Your emotional journey over time</p>
-      </div>
+      <div className="page-header"><h2 className="page-title">{mode==='child'?'🌈 My Feelings':'😊 Mood Journal'}</h2><p className="page-subtitle">Your emotional journey over time</p></div>
       {entries.length===0
-        ? <div className="card empty-state"><div style={{fontSize:48}}>😊</div><p className="empty-state-text">No mood entries yet. Log your mood from the Home page!</p></div>
+        ? <div className="card empty-state"><div style={{fontSize:48}}>😊</div><p className="empty-state-text">No mood entries yet — log your mood from the Home page!</p></div>
         : <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(140px,1fr))',gap:12}}>
             {entries.map(e=>(
               <div key={e.id} className="card" style={{textAlign:'center',padding:20}}>
@@ -80,25 +70,13 @@ function ReportsPage() {
           <div key={r.id} className="card mb-4">
             <div style={{fontWeight:700,fontSize:16,marginBottom:4}}>{r.title}</div>
             <div style={{fontSize:12,color:'#9ca3af',marginBottom:10}}>Dr. {r.doctor?.full_name} · {new Date(r.created_at).toLocaleDateString()}</div>
-            {r.summary_for_patient&&<div style={{background:'#f0fdf4',borderRadius:12,padding:14,marginBottom:10}}><div style={{fontWeight:700,fontSize:13,color:'#166534',marginBottom:4}}>📝 Summary for You</div><p style={{fontSize:14,color:'#374151'}}>{r.summary_for_patient}</p></div>}
-            {r.care_instructions&&<div style={{background:'#eff6ff',borderRadius:12,padding:14}}><div style={{fontWeight:700,fontSize:13,color:'#1d4ed8',marginBottom:4}}>💡 Care Instructions</div><p style={{fontSize:14,color:'#374151'}}>{r.care_instructions}</p></div>}
+            {r.summary_for_patient&&<div style={{background:'#f0fdf4',borderRadius:12,padding:14,marginBottom:10}}><div style={{fontWeight:700,fontSize:13,color:'#166534',marginBottom:4}}>📝 Summary</div><p style={{fontSize:14,color:'#374151'}}>{r.summary_for_patient}</p></div>}
+            {r.care_instructions&&<div style={{background:'#eff6ff',borderRadius:12,padding:14}}><div style={{fontWeight:700,fontSize:13,color:'#1d4ed8',marginBottom:4}}>💡 Instructions</div><p style={{fontSize:14,color:'#374151'}}>{r.care_instructions}</p></div>}
           </div>
         ))
       }
     </div>
   );
-}
-
-function FamilyChatFinder() {
-  const { profile } = useAuth();
-  const [patientId, setPatientId] = useState(null);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    supabase.from('family_members').select('patient_id').eq('family_user_id', profile.id).limit(1).maybeSingle()
-      .then(({ data }) => { if (data) setPatientId(data.patient_id); setLoading(false); });
-  }, []);
-  if (loading) return <div className="loading-spinner"/>;
-  return <FamilyChat targetPatientId={patientId}/>;
 }
 
 function NotificationsPage() {
@@ -137,112 +115,89 @@ function NotificationsPage() {
   );
 }
 
-/* ────── Shell wrappers per role ────── */
-
+// ── Shell wrappers ──
 function PatientShell() {
   const [page, setPage] = useState('home');
   const render = (p) => {
     switch(p) {
-      case 'home':         return <PatientHome onNavigate={setPage}/>;
-      case 'companion':    return <AICompanion/>;
-      case 'medicines':    return <MedicineReminders/>;
+      case 'home': return <PatientHome onNavigate={setPage}/>;
+      case 'companion': return <AICompanion/>;
+      case 'medicines': return <MedicineReminders/>;
       case 'appointments': return <Appointments/>;
-      case 'chat':         return <FamilyChat/>;
-      case 'memories':     return <MemoryVault/>;
-      case 'hope':         return <HopeWellness/>;
-      case 'family':       return <FamilyDashboard/>;
-      case 'mood':         return <MoodJournal/>;
-      case 'reports':      return <ReportsPage/>;
-      case 'voicenotes':   return <VoiceNotes/>;
-      default:             return <PatientHome onNavigate={setPage}/>;
+      case 'mood': return <MoodJournal/>;
+      case 'familyhub': return <FamilyHub/>;
+      case 'hope': return <HopeWellness/>;
+      case 'reports': return <ReportsPage/>;
+      case 'connections': return <ConnectionHub/>;
+      case 'settings': return <ProfileSettings/>;
+      default: return <PatientHome onNavigate={setPage}/>;
     }
   };
-  return (
-    <div className="app-shell">
-      <Sidebar activeKey={page} onNavigate={setPage}/>
-      <main className="main-content">{render(page)}</main>
-    </div>
-  );
+  return <div className="app-shell"><Sidebar activeKey={page} onNavigate={setPage}/><main className="main-content">{render(page)}</main></div>;
 }
 
 function CaregiverShell() {
   const [page, setPage] = useState('home');
   const render = () => {
-    if (page==='appointments') return <Appointments/>;
-    if (page==='notifications') return <NotificationsPage/>;
-    return <CaregiverDashboard/>;
+    switch(page) {
+      case 'appointments': return <Appointments/>;
+      case 'familyhub': return <FamilyHub/>;
+      case 'connections': return <ConnectionHub/>;
+      case 'settings': return <ProfileSettings/>;
+      case 'notifications': return <NotificationsPage/>;
+      default: return <CaregiverDashboard/>;
+    }
   };
-  return (
-    <div className="app-shell">
-      <Sidebar activeKey={page} onNavigate={setPage}/>
-      <main className="main-content">{render()}</main>
-    </div>
-  );
+  return <div className="app-shell"><Sidebar activeKey={page} onNavigate={setPage}/><main className="main-content">{render()}</main></div>;
 }
 
 function DoctorShell() {
   const [page, setPage] = useState('home');
   const render = () => {
-    if (page==='appointments') return <Appointments/>;
-    return <DoctorDashboard/>;
+    switch(page) {
+      case 'appointments': return <Appointments/>;
+      case 'connections': return <ConnectionHub/>;
+      case 'settings': return <ProfileSettings/>;
+      default: return <DoctorDashboard/>;
+    }
   };
-  return (
-    <div className="app-shell">
-      <Sidebar activeKey={page} onNavigate={setPage}/>
-      <main className="main-content">{render()}</main>
-    </div>
-  );
+  return <div className="app-shell"><Sidebar activeKey={page} onNavigate={setPage}/><main className="main-content">{render()}</main></div>;
 }
 
 function FamilyShell() {
   const [page, setPage] = useState('home');
-  const render = (p) => {
-    switch(p) {
-      case 'home':         return <FamilyDashboard/>;
-      case 'chat':         return <FamilyChatFinder/>;
-      case 'messages':     return <FamilyDashboard/>;
-      case 'voicenotes':   return <VoiceNotes/>;
-      case 'memories':     return <MemoryVault/>;
+  const render = () => {
+    switch(page) {
+      case 'home': return <FamilyDashboard/>;
+      case 'familyhub': return <FamilyHub/>;
       case 'appointments': return <Appointments/>;
-      case 'notifications':return <NotificationsPage/>;
-      default:             return <FamilyDashboard/>;
+      case 'notifications': return <NotificationsPage/>;
+      case 'connections': return <ConnectionHub/>;
+      case 'settings': return <ProfileSettings/>;
+      default: return <FamilyDashboard/>;
     }
   };
-  return (
-    <div className="app-shell">
-      <Sidebar activeKey={page} onNavigate={setPage}/>
-      <main className="main-content">{render(page)}</main>
-    </div>
-  );
+  return <div className="app-shell"><Sidebar activeKey={page} onNavigate={setPage}/><main className="main-content">{render()}</main></div>;
 }
 
 function AdminShell() {
   const [page, setPage] = useState('home');
-  return (
-    <div className="app-shell">
-      <Sidebar activeKey={page} onNavigate={setPage}/>
-      <main className="main-content"><AdminDashboard/></main>
-    </div>
-  );
+  return <div className="app-shell"><Sidebar activeKey={page} onNavigate={setPage}/><main className="main-content"><AdminDashboard/></main></div>;
 }
 
-/* ────── Root ────── */
 export default function App() {
   const { user, profile, loading } = useAuth();
-
   if (loading) return (
     <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'#fff9f0'}}>
       <div style={{textAlign:'center'}}>
         <div style={{fontSize:56,marginBottom:12}}>💙</div>
         <div style={{fontFamily:'Lora,serif',fontSize:22,color:'#f97316',marginBottom:6}}>CareAssist</div>
-        <div style={{fontSize:14,color:'#9ca3af',marginBottom:20}}>Your compassionate health companion</div>
+        <div style={{fontSize:14,color:'#9ca3af',marginBottom:20}}>Loading your care space...</div>
         <div className="loading-spinner" style={{margin:'0 auto'}}/>
       </div>
     </div>
   );
-
   if (!user || !profile) return <AuthPage/>;
-
   switch(profile.role) {
     case 'patient':   return <PatientShell/>;
     case 'caregiver': return <CaregiverShell/>;
